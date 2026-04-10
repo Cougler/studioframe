@@ -1,0 +1,4 @@
+{
+  "url": "https://studiofra.me",
+  "notes": "StudioFrame is live at studiofra.me. Single-file prototype viewer with mobile/web device frames, custom gradient builder, color picker, webcam pip, screen recording with MP4 conversion, and collapsible sidebar. Next: Supabase auth, Gumroad payment integration, Tauri desktop wrapper."
+}
