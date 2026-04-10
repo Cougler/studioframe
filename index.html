@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js" defer></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
 
@@ -2543,6 +2544,7 @@
       if (micStream) tracks.push(...micStream.getAudioTracks());
       const combinedStream = new MediaStream(tracks);
 
+      // ── WebM recording (always works) ──
       recordedChunks = [];
       mediaRecorder = new MediaRecorder(combinedStream, {
         mimeType: 'video/webm;codecs=vp9',
@@ -2553,15 +2555,97 @@
         if (e.data.size > 0) recordedChunks.push(e.data);
       };
 
-      mediaRecorder.onstop = () => {
+      // ── MP4 parallel recording via VideoEncoder + mp4-muxer ──
+      let mp4Muxer = null;
+      let mp4Encoder = null;
+      let mp4FrameReader = null;
+      let mp4ResultBlob = null;
+      const canDoMp4 = typeof VideoEncoder !== 'undefined'
+        && typeof MediaStreamTrackProcessor !== 'undefined'
+        && typeof Mp4Muxer !== 'undefined';
+
+      if (canDoMp4) {
+        try {
+          const videoTrack = displayStream.getVideoTracks()[0];
+          const settings = videoTrack.getSettings();
+          const vWidth = settings.width || 1920;
+          const vHeight = settings.height || 1080;
+
+          mp4Muxer = new Mp4Muxer.Muxer({
+            target: new Mp4Muxer.ArrayBufferTarget(),
+            video: {
+              codec: 'avc',
+              width: vWidth,
+              height: vHeight
+            },
+            fastStart: 'in-memory'
+          });
+
+          let frameCount = 0;
+          mp4Encoder = new VideoEncoder({
+            output: (chunk, meta) => {
+              mp4Muxer.addVideoChunk(chunk, meta);
+            },
+            error: (e) => console.error('VideoEncoder error:', e)
+          });
+
+          mp4Encoder.configure({
+            codec: 'avc1.640028',
+            width: vWidth,
+            height: vHeight,
+            bitrate: 8000000,
+            framerate: 30
+          });
+
+          const processor = new MediaStreamTrackProcessor({ track: videoTrack });
+          mp4FrameReader = processor.readable.getReader();
+
+          // Read frames in background
+          (async () => {
+            try {
+              while (true) {
+                const { value: frame, done } = await mp4FrameReader.read();
+                if (done) break;
+                if (mp4Encoder.state === 'configured') {
+                  mp4Encoder.encode(frame, { keyFrame: frameCount % 90 === 0 });
+                  frameCount++;
+                }
+                frame.close();
+              }
+            } catch (e) {
+              // Stream ended
+            }
+          })();
+        } catch (e) {
+          console.error('MP4 parallel setup failed:', e);
+          mp4Muxer = null;
+          mp4Encoder = null;
+        }
+      }
+
+      mediaRecorder.onstop = async () => {
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         displayStream.getTracks().forEach(t => t.stop());
         if (micStream) micStream.getTracks().forEach(t => t.stop());
+
+        // Finalize MP4 if available
+        if (mp4Encoder && mp4Muxer) {
+          try {
+            if (mp4FrameReader) mp4FrameReader.cancel();
+            await mp4Encoder.flush();
+            mp4Muxer.finalize();
+            mp4ResultBlob = new Blob([mp4Muxer.target.buffer], { type: 'video/mp4' });
+          } catch (e) {
+            console.error('MP4 finalize failed:', e);
+            mp4ResultBlob = null;
+          }
+        }
+
         recBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>';
         recBtn.className = 'rec-toolbar-btn rec-record-btn';
         recBtn.title = 'Start Recording';
         if (!wasCollapsed) document.body.classList.remove('panel-collapsed');
-        showRecordingDialog(blob);
+        showRecordingDialog(blob, mp4ResultBlob);
       };
 
       mediaRecorder.start();
@@ -2599,22 +2683,24 @@
   const recDlClose = document.getElementById('rec-dl-close');
   let currentRecordingBlob = null;
 
-  const webCodecsSupported = typeof VideoDecoder !== 'undefined' && typeof VideoEncoder !== 'undefined';
+  // Check if parallel MP4 recording is possible
+  const canParallelMp4 = typeof VideoEncoder !== 'undefined'
+    && typeof MediaStreamTrackProcessor !== 'undefined';
 
-  // If WebCodecs not supported, disable MP4 button and add badge
-  if (!webCodecsSupported) {
+  if (!canParallelMp4) {
     recDlMp4.disabled = true;
     recDlMp4.innerHTML += '<span class="badge-chrome">Chrome only</span>';
   }
 
-  function showRecordingDialog(blob) {
+  function showRecordingDialog(blob, mp4Blob) {
     currentRecordingBlob = blob;
+    mp4ParallelBlob = mp4Blob || null;
     const url = URL.createObjectURL(blob);
     recDialogVideo.src = url;
     recDialogOverlay.classList.add('open');
     recDialogProgress.classList.remove('active');
     recDialogStatus.classList.remove('active');
-    recDlMp4.disabled = !webCodecsSupported;
+    recDlMp4.disabled = !mp4ParallelBlob;
     recDlWebm.disabled = false;
   }
 
@@ -2643,122 +2729,15 @@
   // Discard
   recDlClose.onclick = closeRecordingDialog;
 
-  // Download as MP4 via WebCodecs + mp4-muxer
-  let mp4MuxerLoaded = false;
+  // Download as MP4
+  // The MP4 is recorded in parallel during screen capture using
+  // VideoEncoder + mp4-muxer when available
+  let mp4ParallelBlob = null;
 
-  async function loadMp4Muxer() {
-    if (mp4MuxerLoaded) return;
-    await new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js';
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-    mp4MuxerLoaded = true;
-  }
-
-  recDlMp4.onclick = async () => {
-    if (!currentRecordingBlob || !webCodecsSupported) return;
-
-    recDlMp4.disabled = true;
-    recDlWebm.disabled = true;
-    recDialogProgress.classList.add('active');
-    recDialogProgressBar.style.width = '0%';
-    recDialogStatus.textContent = 'Loading converter...';
-    recDialogStatus.classList.add('active');
-
-    try {
-      await loadMp4Muxer();
-
-      recDialogStatus.textContent = 'Preparing video...';
-
-      // Decode the WebM to get frames
-      const videoEl = document.createElement('video');
-      videoEl.muted = true;
-      videoEl.src = URL.createObjectURL(currentRecordingBlob);
-      await new Promise(r => { videoEl.onloadedmetadata = r; });
-      const width = videoEl.videoWidth;
-      const height = videoEl.videoHeight;
-      const duration = videoEl.duration;
-
-      // Set up mp4-muxer
-      const muxer = new Mp4Muxer.Muxer({
-        target: new Mp4Muxer.ArrayBufferTarget(),
-        video: {
-          codec: 'avc',
-          width,
-          height
-        },
-        fastStart: 'in-memory'
-      });
-
-      // Set up VideoEncoder
-      const encodedChunks = [];
-      const encoder = new VideoEncoder({
-        output: (chunk, meta) => {
-          muxer.addVideoChunk(chunk, meta);
-        },
-        error: (e) => { throw e; }
-      });
-
-      encoder.configure({
-        codec: 'avc1.640028',
-        width,
-        height,
-        bitrate: 8000000,
-        framerate: 30
-      });
-
-      // Read frames using requestVideoFrameCallback
-      recDialogStatus.textContent = 'Converting to MP4...';
-
-      const fps = 30;
-      const totalFrames = Math.ceil(duration * fps);
-      let frameCount = 0;
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-
-      for (let t = 0; t < duration; t += 1 / fps) {
-        videoEl.currentTime = t;
-        await new Promise(r => { videoEl.onseeked = r; });
-
-        ctx.drawImage(videoEl, 0, 0, width, height);
-        const frame = new VideoFrame(canvas, {
-          timestamp: t * 1000000,
-          duration: (1 / fps) * 1000000
-        });
-
-        encoder.encode(frame, { keyFrame: frameCount % 60 === 0 });
-        frame.close();
-
-        frameCount++;
-        const pct = Math.round((frameCount / totalFrames) * 100);
-        recDialogProgressBar.style.width = pct + '%';
-        recDialogStatus.textContent = `Converting to MP4... ${pct}%`;
-
-        // Yield to keep UI responsive
-        if (frameCount % 5 === 0) await new Promise(r => setTimeout(r, 0));
-      }
-
-      await encoder.flush();
-      muxer.finalize();
-
-      const mp4Blob = new Blob([muxer.target.buffer], { type: 'video/mp4' });
-      downloadBlob(mp4Blob, 'StudioFrame-Recording.mp4');
-
-      URL.revokeObjectURL(videoEl.src);
-      closeRecordingDialog();
-
-    } catch (err) {
-      console.error('MP4 conversion failed:', err);
-      recDialogStatus.textContent = 'Conversion failed. Try downloading as WebM instead.';
-      recDialogStatus.classList.add('active');
-      recDlWebm.disabled = false;
-      recDlMp4.disabled = false;
-    }
+  recDlMp4.onclick = () => {
+    if (!mp4ParallelBlob) return;
+    downloadBlob(mp4ParallelBlob, 'StudioFrame-Recording.mp4');
+    closeRecordingDialog();
   };
 </script>
 
