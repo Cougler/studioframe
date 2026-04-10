@@ -655,6 +655,124 @@
 
     .picker-confirm:hover { background: var(--accent-hover); }
 
+    /* ── Post-Recording Dialog ── */
+    .rec-dialog-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 900;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rec-dialog-overlay.open { display: flex; }
+
+    .rec-dialog {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 24px;
+      width: 480px;
+      max-width: 90vw;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .rec-dialog-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .rec-dialog-video {
+      width: 100%;
+      border-radius: 10px;
+      background: #000;
+      max-height: 280px;
+    }
+
+    .rec-dialog-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .rec-dialog-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+
+    .rec-dialog-btn.primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .rec-dialog-btn.primary:hover { background: var(--accent-hover); }
+
+    .rec-dialog-btn.secondary {
+      background: #252525;
+      color: #e0e0e0;
+    }
+
+    .rec-dialog-btn.secondary:hover { background: #333; }
+
+    .rec-dialog-btn.ghost {
+      background: transparent;
+      color: #888;
+    }
+
+    .rec-dialog-btn.ghost:hover { color: #ccc; }
+
+    .rec-dialog-btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .rec-dialog-progress {
+      width: 100%;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .rec-dialog-progress.active { display: block; }
+
+    .rec-dialog-progress-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .rec-dialog-status {
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+      display: none;
+    }
+
+    .rec-dialog-status.active { display: block; }
+
     /* ── Webcam Pip ── */
     .cam-pip {
       position: absolute;
@@ -1320,6 +1438,29 @@
     </div>
 
 
+  </div>
+
+  <!-- Post-Recording Dialog -->
+  <div class="rec-dialog-overlay" id="rec-dialog-overlay">
+    <div class="rec-dialog">
+      <div class="rec-dialog-title">Recording Complete</div>
+      <video class="rec-dialog-video" id="rec-dialog-video" controls></video>
+      <div class="rec-dialog-progress" id="rec-dialog-progress">
+        <div class="rec-dialog-progress-bar" id="rec-dialog-progress-bar"></div>
+      </div>
+      <div class="rec-dialog-status" id="rec-dialog-status">Converting...</div>
+      <div class="rec-dialog-actions">
+        <button class="rec-dialog-btn primary" id="rec-dl-mp4">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download as MP4
+        </button>
+        <button class="rec-dialog-btn secondary" id="rec-dl-webm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download as WebM
+        </button>
+        <button class="rec-dialog-btn ghost" id="rec-dl-close">Discard</button>
+      </div>
+    </div>
   </div>
 
   <!-- Color Picker -->
@@ -2356,7 +2497,11 @@
     try {
       // Get permissions first (before countdown)
       const displayStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
+        video: {
+          width: { ideal: 2560 },
+          height: { ideal: 1440 },
+          frameRate: { ideal: 60 }
+        },
         audio: true,
         preferCurrentTab: true
       });
@@ -2388,7 +2533,10 @@
       const combinedStream = new MediaStream(tracks);
 
       recordedChunks = [];
-      mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
+      mediaRecorder = new MediaRecorder(combinedStream, {
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: 8000000
+      });
 
       mediaRecorder.ondataavailable = e => {
         if (e.data.size > 0) recordedChunks.push(e.data);
@@ -2396,19 +2544,13 @@
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'StudioFrame-Recording.webm';
-        a.click();
-        URL.revokeObjectURL(url);
         displayStream.getTracks().forEach(t => t.stop());
         if (micStream) micStream.getTracks().forEach(t => t.stop());
         recBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>';
         recBtn.className = 'rec-toolbar-btn rec-record-btn';
         recBtn.title = 'Start Recording';
-        // Restore sidebar
         if (!wasCollapsed) document.body.classList.remove('panel-collapsed');
+        showRecordingDialog(blob);
       };
 
       mediaRecorder.start();
@@ -2432,6 +2574,114 @@
 
     } catch (err) {
       // User cancelled the share dialog
+    }
+  };
+
+  // ── Post-Recording Dialog ──
+  const recDialogOverlay = document.getElementById('rec-dialog-overlay');
+  const recDialogVideo = document.getElementById('rec-dialog-video');
+  const recDialogProgress = document.getElementById('rec-dialog-progress');
+  const recDialogProgressBar = document.getElementById('rec-dialog-progress-bar');
+  const recDialogStatus = document.getElementById('rec-dialog-status');
+  const recDlMp4 = document.getElementById('rec-dl-mp4');
+  const recDlWebm = document.getElementById('rec-dl-webm');
+  const recDlClose = document.getElementById('rec-dl-close');
+  let currentRecordingBlob = null;
+
+  function showRecordingDialog(blob) {
+    currentRecordingBlob = blob;
+    const url = URL.createObjectURL(blob);
+    recDialogVideo.src = url;
+    recDialogOverlay.classList.add('open');
+    recDialogProgress.classList.remove('active');
+    recDialogStatus.classList.remove('active');
+    recDlMp4.disabled = false;
+    recDlWebm.disabled = false;
+  }
+
+  function closeRecordingDialog() {
+    recDialogOverlay.classList.remove('open');
+    recDialogVideo.src = '';
+    currentRecordingBlob = null;
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Download as WebM
+  recDlWebm.onclick = () => {
+    if (!currentRecordingBlob) return;
+    downloadBlob(currentRecordingBlob, 'StudioFrame-Recording.webm');
+    closeRecordingDialog();
+  };
+
+  // Discard
+  recDlClose.onclick = closeRecordingDialog;
+
+  // Download as MP4 (convert via ffmpeg.wasm)
+  let ffmpegLoaded = false;
+  let ffmpegInstance = null;
+
+  async function loadFFmpeg() {
+    if (ffmpegLoaded) return;
+    recDialogStatus.textContent = 'Loading converter...';
+    recDialogStatus.classList.add('active');
+
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+
+    ffmpegInstance = FFmpeg.createFFmpeg({
+      log: false,
+      progress: ({ ratio }) => {
+        recDialogProgressBar.style.width = Math.round(ratio * 100) + '%';
+      }
+    });
+    await ffmpegInstance.load();
+    ffmpegLoaded = true;
+  }
+
+  recDlMp4.onclick = async () => {
+    if (!currentRecordingBlob) return;
+    recDlMp4.disabled = true;
+    recDlWebm.disabled = true;
+    recDialogProgress.classList.add('active');
+    recDialogProgressBar.style.width = '0%';
+
+    try {
+      await loadFFmpeg();
+
+      recDialogStatus.textContent = 'Converting to MP4...';
+      recDialogStatus.classList.add('active');
+
+      const data = new Uint8Array(await currentRecordingBlob.arrayBuffer());
+      ffmpegInstance.FS('writeFile', 'input.webm', data);
+
+      await ffmpegInstance.run('-i', 'input.webm', '-c:v', 'libx264', '-preset', 'fast', '-crf', '23', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', 'output.mp4');
+
+      const mp4Data = ffmpegInstance.FS('readFile', 'output.mp4');
+      const mp4Blob = new Blob([mp4Data.buffer], { type: 'video/mp4' });
+
+      // Cleanup ffmpeg FS
+      ffmpegInstance.FS('unlink', 'input.webm');
+      ffmpegInstance.FS('unlink', 'output.mp4');
+
+      downloadBlob(mp4Blob, 'StudioFrame-Recording.mp4');
+      closeRecordingDialog();
+    } catch (err) {
+      recDialogStatus.textContent = 'Conversion failed. Try downloading as WebM instead.';
+      recDlWebm.disabled = false;
+      recDlMp4.disabled = false;
     }
   };
 </script>
