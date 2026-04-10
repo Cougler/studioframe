@@ -1,0 +1,14 @@
+/Users/aaroncougle/Apps/studioframe/src-tauri/target/release/deps/thiserror-c5e4dc93f9bed255.d: /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /Users/aaroncougle/Apps/studioframe/src-tauri/target/release/build/thiserror-d525f5e18180f2ec/out/private.rs
+
+/Users/aaroncougle/Apps/studioframe/src-tauri/target/release/deps/libthiserror-c5e4dc93f9bed255.rlib: /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /Users/aaroncougle/Apps/studioframe/src-tauri/target/release/build/thiserror-d525f5e18180f2ec/out/private.rs
+
+/Users/aaroncougle/Apps/studioframe/src-tauri/target/release/deps/libthiserror-c5e4dc93f9bed255.rmeta: /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /Users/aaroncougle/Apps/studioframe/src-tauri/target/release/build/thiserror-d525f5e18180f2ec/out/private.rs
+
+/Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs:
+/Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs:
+/Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs:
+/Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs:
+/Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs:
+/Users/aaroncougle/Apps/studioframe/src-tauri/target/release/build/thiserror-d525f5e18180f2ec/out/private.rs:
+
+# env-dep:OUT_DIR=/Users/aaroncougle/Apps/studioframe/src-tauri/target/release/build/thiserror-d525f5e18180f2ec/out

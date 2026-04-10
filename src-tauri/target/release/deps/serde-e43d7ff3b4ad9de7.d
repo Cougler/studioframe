@@ -1,0 +1,14 @@
+/Users/aaroncougle/Apps/studioframe/src-tauri/target/release/deps/serde-e43d7ff3b4ad9de7.d: /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/aaroncougle/Apps/studioframe/src-tauri/target/release/build/serde-7560687473f58844/out/private.rs
+
+/Users/aaroncougle/Apps/studioframe/src-tauri/target/release/deps/libserde-e43d7ff3b4ad9de7.rlib: /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/aaroncougle/Apps/studioframe/src-tauri/target/release/build/serde-7560687473f58844/out/private.rs
+
+/Users/aaroncougle/Apps/studioframe/src-tauri/target/release/deps/libserde-e43d7ff3b4ad9de7.rmeta: /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/aaroncougle/Apps/studioframe/src-tauri/target/release/build/serde-7560687473f58844/out/private.rs
+
+/Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/Users/aaroncougle/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/Users/aaroncougle/Apps/studioframe/src-tauri/target/release/build/serde-7560687473f58844/out/private.rs:
+
+# env-dep:OUT_DIR=/Users/aaroncougle/Apps/studioframe/src-tauri/target/release/build/serde-7560687473f58844/out
